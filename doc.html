@@ -1,10 +1,10 @@
 <h1>Core Concepts and Conventions</h1>
 <h3>Standard Patterns</h3>
-<p>The use of several patterns will be required throughout this app. For object or 'class' contruction where inheritance is not needed, a revealing module pattern should be used. Self-invoking functions for singleton objects should be used.  If it's a singleton-type module, an object literal should be used and exported with `module.exports`.  For objects that are meant to be inherited, the prototype or 'this' inside the constructor are acceptable. For any instantiable objects, the 'new' keyword should be used.</p>
+<p>The use of several patterns will be required throughout this app. For object or 'class' construction where inheritance is not needed, a revealing module pattern should be used. Self-invoking functions for singleton objects should be used.  If it's a singleton-type module, an object literal should be used and exported with `module.exports`.  For objects that are meant to be inherited, the prototype or 'this' inside the constructor are acceptable. For any instantiable objects, the 'new' keyword should be used.</p>
 
 <p>Example of a revealing module pattern (no inheritance needed):</p>
 
-<pre>var Messages = function(someId) {
+<pre>function Messages(someId) {
 	var id = someId;
 
 	// Member method
@@ -69,6 +69,8 @@ var msg = new Messages(32);
 
 <p>An app can maintain global-wide properties and objects by appending them to the 'core' module.  This singleton module is meant to be used in every app module by simply requiring: `var APP = require('core');`.  Adding on to this module should be reserved for things like global libraries used over and over again, app-wide constants, etc.</p>
 
+<p><strong>NOTE:</strong> This scaffold does not follow a 'pure' MVC convention.  In most cases, pure MVC is not needed in Titanium apps.  This document leaves flexibility for the developer.  If an 'active model' is needed (e.g. where the model updates the view directly, with no controller involved) then the developer has freedom to implement this.  Care should be taken to not over complicate the solution.</p>
+
 <h3>Models</h3>
 <p>Models are the data layer for this app. They can serve as two types: instantiable objects that can be reused across the app or as a PDO type object that stores data in memory for the lifetime of the app. Data logic should be offloaded in these objects as much as possible.  Models can contain business logic if it's related to the model itself (e.g. While it downloads a JSON feed, it needs to download an image for that feed and store it for offline use.  It could make sense for the model to handle the image cache there).</p>
 
@@ -77,13 +79,13 @@ var msg = new Messages(32);
 <p>To further separate the UI file from properties, it may have a corresponding 'styles' file. The styles file is an object literal that contains the object properties used to populate UI elements.</p>
 
 <h3>Controllers</h3>
-<p>Controllers are the main level business of the app. Controllers will manage the UI and model delegation for screens and components across an app. Some controllers may be global to the app (singletons) and others instantiable, invoked when using a certain part of the app.</p>
+<p>Controllers are the main level business of the app.  In most cases Controllers represent the brains of a given screen. Controllers will manage the UI and model delegation for screens and components across an app. Some controllers may be global to the app (singletons) and others instantiable, invoked when using a certain part of the app.</p>
 
 <h3>Modules</h3>
-<p>In general, everything will be a CommonJS module.  The 'modules' folder in the root of the sample project is meant to be dropped in to the project for use (e.g. 3rd party). An effort should be made to ensure stand-alone modules are self-contained so we can reuse them elsewhere in the future. Modules will be contained in their own folder with their own set of files if needed and assets.</p>
+<p>In general, everything will be a CommonJS module.  The 'modules' folder in the root of the sample project is meant to be dropped in to the project for use (e.g. 3rd party). An effort should be made to ensure stand-alone modules are self-contained so we can reuse them in other apps in the future. Modules will be contained in their own folder with their own set of files if needed and assets (e.g. if a module has a standard set of images that can be used across projects, it should go in it's own image folder in the module folder).</p>
 
 <h1>Events</h1>
-<p>UI, models, and controllers will maintain their own internal events except when needed for app-wide cases.  App-wide events should be handled in the 'core' module as much as possible.  UI events will be related to aestetics, UI state, and similar functionality. Controller events will manage things in it's internal workings.</p>
+<p>UI, models, and controllers will maintain their own internal events except when needed for app-wide cases.  App-wide events should be handled in the 'core' module as much as possible.  UI events will be related to aestetics, UI state, and similar functionality. Controller events will manage things in it's internal workings, such as navigation.</p>
 
 <p>Global events will not be placed inside instantiable objects / modules. Global events will be tracked in a global module (singleton, such as the core.js module). A good example is the orientation event placed in core.js. It fires a global function in `core.js` called 'orientationObserverUpdate'. This listener manages all objects that might have an orientation requirement. The 'orientationObserverUpdate' can fire a current controller or UI object that has an orientation function. e.g. 'currentController.orientationUpdate():' or 'currentController.UI.orientationUpdate();'</p>
 
