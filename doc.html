@@ -1,0 +1,185 @@
+<h1>Core Concepts and Conventions</h1>
+<h3>Standard Patterns</h3>
+<p>The use of several patterns will be required throughout this app. For object or 'class' contruction where inheritance is not needed, a revealing module pattern should be used. Self-invoking functions for singleton objects should be used.  If it's a singleton-type module, an object literal should be used and exported with `module.exports`.  For objects that are meant to be inherited, the prototype or 'this' inside the constructor are acceptable. For any instantiable objects, the 'new' keyword should be used.</p>
+
+<p>Example of a revealing module pattern (no inheritance needed):</p>
+
+<pre>var Messages = function(someId) {
+	var id = someId;
+
+	// Member method
+    function getLatestMessages() {
+        var data = [
+            { text: 'This is a test' },
+            { text: 'This is a test 2' },
+            { text: 'This is a test 3' }
+        ];
+
+        return data;
+    }
+
+    // Return this object's 'public API'
+    return {
+        getLatestMessages: getLatestMessages,
+        id: someId
+    }
+};
+
+// This example must be instantiated using the 'new' keyword
+var msg = new Messages(32);
+</pre>
+
+<p>Example of a CommonJS module that is meant to be a singleton (e.g. Maintains state throughout the entire use of the app):</p>
+
+<pre>
+    var MasterNavigation = {
+        UI: (function() { /** Logic here **/ })(),
+        addItem: function() {},
+        removeItem: function() {},
+        enabled: true
+        // etc.
+    };
+
+    module.exports = MasterNavigation;
+</pre>
+
+<p>Example of a CommonJS module meant to extended / inherited:</p>
+
+<pre>
+    function MyUI() {
+        this.wrapper = Ti.UI.createView();
+        this.switchCell = function() {};
+        // etc.
+    }
+
+    module.exports = MyUI;
+
+    // Implementation:
+    var MyModule = require('app/ui/myui');
+    var UI = new MyModule();
+    win.add( UI.wrapper );
+    UI.switchCell();
+    //etc.
+</pre>
+
+<p>If inheritance is needed for any reason then those parent objects will be built with 'this' prepended to it's public methods / properties. The use of apply/call will be used to inherit methods in to child objects. Due to Titanium's poor performance around mixins, mixin type inheritance should not be used unless it is for small objects.</p>
+
+<h3>Global Namespace</h3>
+<p>Apps should not use a global namespace in place of CommonJS modules and more modularized code.  For portions of the app that require statefulness, there are two possible avenues: 1.  Use a singleton CommonJS module that maintains state wherever required, 2. Pass the desired object in to another module (e.g. `someModule.init(MyStatefulObject)`).</p>
+
+<p>An app can maintain global-wide properties and objects by appending them to the 'core' module.  This singleton module is meant to be used in every app module by simply requiring: `var APP = require('core');`.  Adding on to this module should be reserved for things like global libraries used over and over again, app-wide constants, etc.</p>
+
+<h3>Models</h3>
+<p>Models are the data layer for this app. They can serve as two types: instantiable objects that can be reused across the app or as a PDO type object that stores data in memory for the lifetime of the app. Data logic should be offloaded in these objects as much as possible.  Models can contain business logic if it's related to the model itself (e.g. While it downloads a JSON feed, it needs to download an image for that feed and store it for offline use.  It could make sense for the model to handle the image cache there).</p>
+
+<h3>UI and Styles</h3>
+<p>UI files serve as the 'view' areas of the app. They will control any logic for aestetic events (e.g. a highlight state), setting UI specific things such as a controller calling <code>UI.setTitle('Cool beans')</code> to change the title in the UI. They also serve for TiUI object creation and management.</p>
+<p>To further separate the UI file from properties, it may have a corresponding 'styles' file. The styles file is an object literal that contains the object properties used to populate UI elements.</p>
+
+<h3>Controllers</h3>
+<p>Controllers are the main level business of the app. Controllers will manage the UI and model delegation for screens and components across an app. Some controllers may be global to the app (singletons) and others instantiable, invoked when using a certain part of the app.</p>
+
+<h3>Modules</h3>
+<p>In general, everything will be a CommonJS module.  The 'modules' folder in the root of the sample project is meant to be dropped in to the project for use (e.g. 3rd party). An effort should be made to ensure stand-alone modules are self-contained so we can reuse them elsewhere in the future. Modules will be contained in their own folder with their own set of files if needed and assets.</p>
+
+<h1>Events</h1>
+<p>UI, models, and controllers will maintain their own internal events except when needed for app-wide cases.  App-wide events should be handled in the 'core' module as much as possible.  UI events will be related to aestetics, UI state, and similar functionality. Controller events will manage things in it's internal workings.</p>
+
+<p>Global events will not be placed inside instantiable objects / modules. Global events will be tracked in a global module (singleton, such as the core.js module). A good example is the orientation event placed in core.js. It fires a global function in `core.js` called 'orientationObserverUpdate'. This listener manages all objects that might have an orientation requirement. The 'orientationObserverUpdate' can fire a current controller or UI object that has an orientation function. e.g. 'currentController.orientationUpdate():' or 'currentController.UI.orientationUpdate();'</p>
+
+<h1>Managing Orientation UI</h1>
+
+<p>Titanium doesn't handle different layouts in orientation very well (because of absence of NIB files, etc.) so care must be taken in how this is setup. The design for this project isn't overly complex so it likely won't be a factor. Orientation management will be handled in two ways:</p>
+
+<p>#1. Via the controller. For complex orientation handling the controller will need an 'orientationUpdate()' method. This will handle all orientation needs the controller is managing.</p>
+
+<p>#2. Via the UI. This is the most common scenario. The orientationObserverUpdate method will check if the current controller's UI and other listening objects have an orientationUpdate() method in the UI namespace. If so it will fire them and the UI will update accordingly.</p>
+
+<p>Either method above will pass a landscape / portrait arguement which can be used by the UI's correspnding style sheet. e.g.</p>
+
+<pre>function orientationUpdate(type) {
+    wrapper.height = Styles.Example[type].wrapper.height;
+}
+</pre>
+
+<p>Orientation specific styles will be separated like so:</p>
+<pre>Styles.Example = {
+    // Orientation specific
+    portrait: {
+    	wrapper: {
+    		height: 100
+    	}
+    },
+    landscape: {
+    	wrapper: {
+    		height: 'auto'
+    	}
+    },
+    // Defaults (probably won't be necessar once we have a global property of current orientation)
+    wrapper: {
+        height: 'auto'
+    }
+};
+</pre>
+
+<h1>Managing cross-platform and form factor files</h1>
+<p>There are several conventions to follow when building against different platforms and form factors:</p>
+
+<h3>Form Factors</h3>
+<p>Conditionals can be built off of the different form factors for this app, i.e. tablet / handheld. For hardcoded values you can simply use something like:</p>
+
+<pre>if(APP.Platform.formFactor === 'tablet') {
+	// do something here
+}
+</pre>
+
+<p>In many cases hard conditionals aren't needed since it's almost always related to UI branching. It's better to use the following:</p>
+
+<pre>// No conditionals needed
+var wrapper = Ti.UI.createView(Styles.Example[APP.Platform.formFactor].wrapper);
+</pre>
+
+<p>Branch by file if the UI or functionality in a form factor is drastically different or if you're doing inheritance based on platform:</p>
+
+<pre>// For a form factor e.g. dashboard.tablet.js
+require('ui/dashboard/dashboard.' + APP.Platform.formFactor + '.js');
+// Or if just a platform type is needed e.g. dashboard.ios.js
+require('ui/dashboard/dashboard.' + APP.Platform.type + '.js');
+</pre>
+
+<h3>Cross platform and type handling</h3>
+
+<p>In similar fashion, iOS / Android / Google TV, etc can be branched by either file or hard conditionals depending on the scenario.</p>
+
+<p>A style.js example for the above scenarios with combined styles can look like this:</p>
+
+<pre>Styles.Example = {
+    menu: {
+        handset: {
+        	android: {
+				buttonTrack: {
+                	height: 30,
+                	top: 0
+            	}
+        	},
+        	ios: {
+        		buttonTrack: {
+                	height: 30
+            	}
+        	}
+        },
+        tablet: {
+            buttonTrack: {
+                height: 100
+            }
+        }
+    }
+}
+</pre>
+
+<p>To avoid excessive dirty nesting like the above example, branch by file will be used when it makes sense:</p>
+
+<pre>// This extreme example shows when an included file for a specific form factor AND platform is needed.
+// Amounts to a file named 'style.handset.ios.js' for instance
+require('ui/dashboard/style.' + APP.Platform.formFactor + '.' + APP.Platform.type + 'js');
+</pre>

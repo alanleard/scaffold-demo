@@ -2,6 +2,10 @@
  * Helper module
  */
 
+/**
+ * Array helpers
+ * @type {Object}
+ */
 exports.array = {
     max: function(_array) {
         return Math.max.apply( Math, _array );
@@ -25,6 +29,33 @@ exports.array = {
       s = s.replace(/!$/, '');
       // Convert to array
       return s.split('!!');
+    }
+};
+
+/**
+ * Store an image locally
+ * @param {String} type
+ * @param {String} id
+ * @param {String} remoteImage
+ */
+exports.cacheImage = function(type, id, remoteImage) {
+    var imageName = id + '.jpg';
+    var file = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, type + Ti.Filesystem.separator + imageName);
+    file.write( remoteImage );
+};
+
+/**
+ * Show a locally stored image
+ * @param {String} type
+ * @param {String} id
+ */
+exports.loadCachedImage = function(type, id) {
+    var file = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, type + Ti.Filesystem.separator + id + '.jpg');
+
+    if(file.exists()) {
+        return file.read();
+    } else {
+        return null;
     }
 };
 
@@ -169,4 +200,36 @@ exports.date = {
             return d[0] + ' ' + d[1].replace(/,/, ' at ') + String.formatTime(q);
         }
     }
+};
+
+/**
+ * Network check dialog
+ * @param {Function} callback
+ * @param {Function} giveup
+ */
+exports.networkCheck = function(callback, giveup) {
+    var connectionDialog = Ti.UI.createAlertDialog({
+    	title:'No data network connection.', 
+    	message:'Please connect to internet and try again.',
+    	buttonNames:['Retry', 'Cancel']
+    });
+    connectionDialog.addEventListener('click', function(event){
+    	connectionDialog.hide();
+    	if (event.index == 0) {
+	    	if (Ti.Network.online) {
+	    		callback();
+	    	} else {
+	    		connectionDialog.show();
+	    	}
+    	} else {
+    		if (giveup) {
+	    		giveup();
+    		}
+    	}
+    });
+	if (Ti.Network.online) {
+		callback();
+	} else {
+		connectionDialog.show();
+	}
 };
