@@ -27,15 +27,6 @@ var APP = {
 		Ti.App.addEventListener("pause", APP.exit);
 		Ti.App.addEventListener("close", APP.exit);
 		Ti.App.addEventListener("resumed", APP.resume);
-
-        /**
-         * Entry point logic for app here
-         */
-        APP.masterWindow.open();
-        // We'll just open the user screen for now
-        var UsersController = require('app/controllers/users');
-        APP.currentScreen = new UsersController();
-        APP.masterWindow.add( APP.currentScreen.UI.wrapper );
     },
     /**
      * The main app window
